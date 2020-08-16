@@ -62,6 +62,5 @@
  */
 #define PYRRHIC_VALUE_PAWN     (  100)
 #define PYRRHIC_VALUE_MATE     (32000)
-#define PYRRHIC_VALUE_INFINITE (32767)
 #define PYRRHIC_VALUE_DRAW     (    0)
 #define PYRRHIC_MAX_MATE_PLY   (  255)
