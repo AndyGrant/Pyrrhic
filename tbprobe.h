@@ -1,5 +1,6 @@
 /*
- * (c) 2015 basil, all rights reserved,
+ * Copyright (c) 2013-2020 Ronald de Man
+ * Copyright (c) 2015 Basil, all rights reserved,
  * Modifications Copyright (c) 2016-2019 by Jon Dart
  * Modifications Copyright (c) 2020-2020 by Andrew Grant
  *
