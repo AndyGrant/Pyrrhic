@@ -124,8 +124,6 @@ void tb_free(void);
  * PARAMETERS:
  * - white, black, kings, queens, rooks, bishops, knights, pawns:
  *   The current position (bitboards).
- * - rule50:
- *   The 50-move half-move clock.
  * - ep:
  *   The en passant square (if exists).  Set to zero if there is no en passant
  *   square.
