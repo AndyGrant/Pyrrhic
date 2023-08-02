@@ -24,7 +24,6 @@
  */
 
 #include <assert.h>
-#include <cstdio>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
