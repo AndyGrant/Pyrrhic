@@ -98,6 +98,9 @@
  * The tablebase can be probed for any position where #pieces <= TB_LARGEST.
  */
 extern int TB_LARGEST;
+extern int TB_NUM_WDL;
+extern int TB_NUM_DTM;
+extern int TB_NUM_DTZ;
 
 /*
  * Initialize the tablebase.
