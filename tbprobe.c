@@ -639,8 +639,6 @@ bool tb_init(const char *path)
     LOCK_DESTROY(tbMutex);
 
     pathString = NULL;
-    pieceEntry = NULL;
-    pawnEntry = NULL;
     numWdl = numDtm = numDtz = 0;
   }
 
@@ -796,6 +794,8 @@ void tb_free(void)
   tb_init("");
   free(pieceEntry);
   free(pawnEntry);
+  pieceEntry = NULL;
+  pawnEntry = NULL;
 }
 
 static const int8_t OffDiag[] = {
