@@ -639,6 +639,8 @@ bool tb_init(const char *path)
     LOCK_DESTROY(tbMutex);
 
     pathString = NULL;
+    pieceEntry = NULL;
+    pawnEntry = NULL;
     numWdl = numDtm = numDtz = 0;
   }
 
