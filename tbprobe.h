@@ -31,19 +31,32 @@
 
 #include "tbconfig.h"
 
+/// Definitions for PyrrhicMoves
+
+#define PYRRHIC_FLAG_NONE   0x0
+#define PYRRHIC_FLAG_QPROMO 0x1
+#define PYRRHIC_FLAG_RPROMO 0x2
+#define PYRRHIC_FLAG_BPROMO 0x3
+#define PYRRHIC_FLAG_NPROMO 0x4
+#define PYRRHIC_FLAG_ENPASS 0x8
+
+#define PYRRHIC_SHIFT_TO    0
+#define PYRRHIC_SHIFT_FROM  6
+#define PYRRHIC_SHIFT_FLAGS 12
+
+#define PYRRHIC_MASK_TO          0x3F
+#define PYRRHIC_MASK_FROM        0x3F
+#define PYRRHIC_MASK_FLAGS       0x0F
+#define PYRRHIC_MASK_PROMO_FLAGS 0x07
+
+#define PYRRHIC_MOVE_FLAGS(x) (((x) >> PYRRHIC_SHIFT_FLAGS) & PYRRHIC_MASK_FLAGS)
+
 /****************************************************************************/
 /* MAIN API                                                                 */
 /****************************************************************************/
 
-#define TB_MAX_MOVES                256
 #define TB_MAX_CAPTURES             64
 #define TB_MAX_PLY                  256
-
-#define TB_LOSS                     0       /* LOSS */
-#define TB_BLESSED_LOSS             1       /* LOSS but 50-move draw */
-#define TB_DRAW                     2       /* DRAW */
-#define TB_CURSED_WIN               3       /* WIN but 50-move draw  */
-#define TB_WIN                      4       /* WIN  */
 
 #define TB_RESULT_WDL_MASK          0x0000000F
 #define TB_RESULT_TO_MASK           0x000003F0
@@ -90,9 +103,8 @@
     (((_res) & ~TB_RESULT_DTZ_MASK) |           \
      (((_dtz) << TB_RESULT_DTZ_SHIFT) & TB_RESULT_DTZ_MASK))
 
-#define TB_RESULT_CHECKMATE         TB_SET_WDL(0, TB_WIN)
-#define TB_RESULT_STALEMATE         TB_SET_WDL(0, TB_DRAW)
-#define TB_RESULT_FAILED            0xFFFFFFFF
+
+#include "api.h"
 
 /*
  * The tablebase can be probed for any position where #pieces <= TB_LARGEST.
