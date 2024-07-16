@@ -116,7 +116,7 @@ int tb_probe_root_dtz(
     uint64_t knights,  uint64_t pawns,
     unsigned rule50,   unsigned ep,
     bool     turn,     bool hasRepeated,
-    bool useRule50,    struct TbRootMoves *results);
+    struct TbRootMoves *results);
 
 int tb_probe_root_wdl(
     uint64_t white,    uint64_t black,
