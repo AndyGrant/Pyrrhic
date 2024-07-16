@@ -1,7 +1,7 @@
 /*
  * (c) 2015 basil, all rights reserved,
  * Modifications Copyright (c) 2016-2019 by Jon Dart
- * Modifications Copyright (c) 2020-2020 by Andrew Grant
+ * Modifications Copyright (c) 2020-2024 by Andrew Grant
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
