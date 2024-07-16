@@ -24,7 +24,6 @@
 
 enum {
 
-    PYRRHIC_BLACK   = 0, PYRRHIC_WHITE   = 1,
     PYRRHIC_PAWN    = 1, PYRRHIC_KNIGHT  = 2,
     PYRRHIC_BISHOP  = 3, PYRRHIC_ROOK    = 4,
     PYRRHIC_QUEEN   = 5, PYRRHIC_KING    = 6,
