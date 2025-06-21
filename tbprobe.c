@@ -674,12 +674,8 @@ bool tb_init(const char *path)
     pawnEntry = (struct PawnEntry*)malloc(TB_MAX_PAWN * sizeof(*pawnEntry));
     if (!pieceEntry || !pawnEntry) {
       fprintf(stderr, "Out of memory.\n");
-      if (pieceEntry) {
-        free(pieceEntry);
-      }      
-      if (pawnEntry) {
-        free(pawnEntry);
-      }
+      free(pieceEntry);
+      free(pawnEntry);
       return false;
     }
   }
