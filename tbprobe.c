@@ -2,7 +2,7 @@
  * Copyright (c) 2013-2020 Ronald de Man
  * Copyright (c) 2015 Basil, all rights reserved,
  * Modifications Copyright (c) 2016-2019 by Jon Dart
- * Modifications Copyright (c) 2020-2024 by Andrew Grant
+ * Modifications Copyright (c) 2020-2026 by Andrew Grant
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -139,9 +139,16 @@ static size_t file_size(FD fd) {
 
 static LOCK_T tbMutex;
 static int initialized = 0;
+static int tb_loaded = 0;
 static int numPaths = 0;
 static char *pathString = NULL;
 static char **paths = NULL;
+
+static tb_loader_fn g_loader = NULL;
+
+void tb_set_loader(tb_loader_fn loader) {
+    g_loader = loader;
+}
 
 static FD open_tb(const char *str, const char *suffix)
 {
@@ -233,7 +240,8 @@ static void *map_file(FD fd, map_t *mapping)
 #ifndef _WIN32
 static void unmap_file(void *data, map_t size)
 {
-  if (!data) return;
+  // size == 0 is a sentinel for loader-supplied bytes; owned by the caller.
+  if (!data || size == 0) return;
   if (munmap(data, size) < 0) {
 	  perror("munmap");
   }
@@ -241,7 +249,8 @@ static void unmap_file(void *data, map_t size)
 #else
 static void unmap_file(void *data, map_t mapping)
 {
-  if (!data) return;
+  // mapping == NULL is a sentinel for loader-supplied bytes; owned by the caller.
+  if (!data || mapping == NULL) return;
   if (!UnmapViewOfFile(data)) {
 	  fprintf(stderr, "unmap failed, error code %lu\n", GetLastError());
   }
@@ -482,14 +491,33 @@ static int test_tb(const char *str, const char *suffix) {
         }
     }
 
+    // On-disk miss: ask the loader, if registered.
+    if (fd == FD_ERR && g_loader) {
+        pyrrhic_tb_blob blob;
+        if (g_loader(str, suffix, &blob))
+            return (blob.size & 63) == 16;
+    }
+
     return fd != FD_ERR;
 }
 
 static void *map_tb(const char *name, const char *suffix, map_t *mapping) {
 
     FD fd = open_tb(name, suffix);
-    if (fd == FD_ERR)
+
+    if (fd == FD_ERR) {
+
+        // On-disk miss: ask the loader, if registered.
+        if (g_loader) {
+            pyrrhic_tb_blob blob;
+            if (g_loader(name, suffix, &blob)) {
+                *mapping = (map_t)0; // sentinel: loader-owned, do not unmap
+                return (void *)blob.data;
+            }
+        }
+
         return NULL;
+    }
 
     void *data = map_file(fd, mapping);
     if (data == NULL) {
@@ -614,6 +642,27 @@ static void free_tb_entry(struct BaseEntry *be)
   }
 }
 
+static void tb_unload(void)
+{
+  if (!tb_loaded) return;
+
+  free(pathString);
+  free(paths);
+  pathString = NULL;
+  paths      = NULL;
+  numPaths   = 0;
+
+  for (int i = 0; i < tbNumPiece; i++)
+    free_tb_entry((struct BaseEntry *)&pieceEntry[i]);
+  for (int i = 0; i < tbNumPawn; i++)
+    free_tb_entry((struct BaseEntry *)&pawnEntry[i]);
+
+  LOCK_DESTROY(tbMutex);
+
+  numWdl = numDtm = numDtz = 0;
+  tb_loaded = 0;
+}
+
 bool tb_init(const char *path)
 {
   if (!initialized) {
@@ -621,50 +670,41 @@ bool tb_init(const char *path)
     initialized = 1;
   }
 
+  tb_unload();
+
   TB_LARGEST = 0;
   TB_NUM_WDL = 0;
   TB_NUM_DTZ = 0;
   TB_NUM_DTM = 0;
 
-  // if pathString is set, we need to clean up first.
-  if (pathString) {
-    free(pathString);
-    free(paths);
-
-    for (int i = 0; i < tbNumPiece; i++)
-      free_tb_entry((struct BaseEntry *)&pieceEntry[i]);
-    for (int i = 0; i < tbNumPawn; i++)
-      free_tb_entry((struct BaseEntry *)&pawnEntry[i]);
-
-    LOCK_DESTROY(tbMutex);
-
-    pathString = NULL;
-    numWdl = numDtm = numDtz = 0;
-  }
-
-  // if path is an empty string or equals "<empty>", we are done.
+  // "<embedded>" is a path-less sentinel for "use the loader only".
+  // If neither a real path nor a loader is configured, there is nothing to load.
   const char *p = path;
-  if (strlen(p) == 0 || !strcmp(p, "<empty>")) return true;
+  bool have_path = !(strlen(p) == 0 || !strcmp(p, "<empty>") || !strcmp(p, "<embedded>"));
+  if (!have_path && !g_loader) return true;
 
-  pathString = (char*)malloc(strlen(p) + 1);
-  strcpy(pathString, p);
-  numPaths = 0;
-  for (int i = 0;; i++) {
-    if (pathString[i] != SEP_CHAR)
-      numPaths++;
-    while (pathString[i] && pathString[i] != SEP_CHAR)
-      i++;
-    if (!pathString[i]) break;
-    pathString[i] = 0;
-  }
-  paths = (char**)malloc(numPaths * sizeof(*paths));
-  for (int i = 0, j = 0; i < numPaths; i++) {
-    while (!pathString[j]) j++;
-    paths[i] = &pathString[j];
-    while (pathString[j]) j++;
+  if (have_path) {
+    pathString = (char*)malloc(strlen(p) + 1);
+    strcpy(pathString, p);
+    numPaths = 0;
+    for (int i = 0;; i++) {
+      if (pathString[i] != SEP_CHAR)
+        numPaths++;
+      while (pathString[i] && pathString[i] != SEP_CHAR)
+        i++;
+      if (!pathString[i]) break;
+      pathString[i] = 0;
+    }
+    paths = (char**)malloc(numPaths * sizeof(*paths));
+    for (int i = 0, j = 0; i < numPaths; i++) {
+      while (!pathString[j]) j++;
+      paths[i] = &pathString[j];
+      while (pathString[j]) j++;
+    }
   }
 
   LOCK_INIT(tbMutex);
+  tb_loaded = 1;
 
   tbNumPiece = tbNumPawn = 0;
   TB_MaxCardinality = TB_MaxCardinalityDTM = 0;
@@ -791,7 +831,7 @@ finished:
 
 void tb_free(void)
 {
-  tb_init("");
+  tb_unload();
   free(pieceEntry);
   free(pawnEntry);
   pieceEntry = NULL;

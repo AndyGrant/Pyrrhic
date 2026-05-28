@@ -2,7 +2,7 @@
  * Copyright (c) 2013-2020 Ronald de Man
  * Copyright (c) 2015 Basil, all rights reserved,
  * Modifications Copyright (c) 2016-2019 by Jon Dart
- * Modifications Copyright (c) 2020-2024 by Andrew Grant
+ * Modifications Copyright (c) 2020-2026 by Andrew Grant
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -89,6 +89,19 @@ struct TbRootMoves {
 
 bool tb_init(const char *_path);
 void tb_free(void);
+
+/// Optional loader for non-filesystem tablebases. When set, tb_init() asks
+/// the loader for any table not found on disk. Returned bytes are not freed
+/// by Pyrrhic. Pass NULL to disable.
+
+typedef struct {
+    const unsigned char *data;
+    size_t               size;
+} pyrrhic_tb_blob;
+
+typedef bool (*tb_loader_fn)(const char *name, const char *suffix, pyrrhic_tb_blob *out);
+
+void tb_set_loader(tb_loader_fn loader);
 
 /// Pyrrhic Tablebase Probing Functions
 
